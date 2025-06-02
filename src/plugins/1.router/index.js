@@ -1,5 +1,6 @@
 import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router/auto'
+import { setupGuards } from './guards'
 
 function recursiveLayouts(route) {
   if (route.children) {
@@ -11,7 +12,7 @@ function recursiveLayouts(route) {
   
   return setupLayouts([route])[0]
 }
-
+// http://localhost:5173/products
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to) {
@@ -21,10 +22,31 @@ const router = createRouter({
     return { top: 0 }
   },
   extendRoutes: pages => [
-    ...[...pages].map(route => recursiveLayouts(route)),
+    ...[{
+      path: '/',
+      name: 'index',
+      redirect: to => {
+        // TODO: Get type from backend
+        const userData = localStorage.getItem('user');
+        if (userData)  
+          return { name: 'dashboard'};
+        return { name: 'login', query: to.query }
+      },
+    }],
+    ...[...pages,...[
+      {
+        path:'/roles-y-permisos',
+        name: 'roles-y-permisos',
+        component: () => import('@/pages/roles-permisos/index.vue'),
+        meta: {
+           permisssion: 'list_rol',
+        }
+      }
+    ]].map(route => recursiveLayouts(route)),
   ],
 })
 
+setupGuards(router)
 export { router }
 export default function (app) {
   app.use(router)
